@@ -64,12 +64,11 @@ class User
     }
 
 
-
     /**
-     * @param Database $connection
+     * @param \database\Database $connection
      * @return void
      */
-    public function register(Database $connection): void
+    public function register(\database\Database $connection): void
     {
         if (!empty($connection->selectUserByEmail($this->email))) {
             die('User is already registered.');

@@ -1,5 +1,5 @@
 <?php
-require_once ('Database.php');
+require_once("database/config.php");
 require_once ('User.php');
 
 $fullName        = htmlspecialchars($_POST['full-name']);
@@ -20,7 +20,6 @@ if (!$isValidUserData) {
     die('Invalid user data, cannot create user.');
 }
 
-$connection = new Database();
 $user       = new User($email, $password, $fullName);
 
 $user->register($connection);

@@ -1,11 +1,7 @@
 <?php
 
 include_once ("User.php");
-include_once ("Database.php");
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once("database/config.php");
 
 if (!isset($_SESSION['isLoggedIn'])) {
     die('You have to be authenticated to view this page');
@@ -19,22 +15,25 @@ $userIsLoggedIn = $_SESSION['isLoggedIn'];
 
 $imageLink = 'https://cleobuttera.com/wp-content/uploads/2018/03/lifted-baklava-720x720.jpg';
 
-try {
-    $connection = new Database();
-} catch (Exception $e)  {
-    echo $e->getMessage();
-    return;
-}
-
 $meals               = $connection->select('meal');
-$consumedMeals       = $connection->select("consumed_today", [], "user_fid = {$user->getId()}");
+
+$consumedMeals       = $connection->select(
+        "consumed_today",
+        [
+        'consumed_today.count',
+        'consumed_today.consumed_at',
+        'meal.id',
+        'meal.name',
+        'meal.calories'
+        ],
+        "user_fid = {$user->getId()}",
+        0,
+        ['meal' => 'consumed_today.meal_fid = meal.id']);
 
 $totalCaloriesConsumed = 0;
 
-foreach($consumedMeals as $consumedMeal) {
-    $meal = $connection->selectThroughPivot("consumed_today", "meal", "meal_fid", $consumedMeal['meal_fid']);
-    $consumedMeal["meal"] = $meal;
-    $totalCaloriesConsumed += $meal['calories'] * $consumedMeal['count'];
+foreach ($consumedMeals as $consumedMeal) {
+    $totalCaloriesConsumed += $consumedMeal["calories"] * $consumedMeal["count"];
 }
 
 ?>
@@ -75,18 +74,17 @@ foreach($consumedMeals as $consumedMeal) {
 
 <h1>Welcome to Puleadd Weight Loss Assistant!</h1>
 
-<div>
+<div id="calorie-total">
     You are <?php
-    switch (true) {
-        case ($totalCaloriesConsumed < 2000):
-            echo 2000 - $totalCaloriesConsumed . ' calories away from reaching your daily limit of 2000 calories in order to continue losing weight!';
-            break;
-        case ($totalCaloriesConsumed > 2000):
-            echo $totalCaloriesConsumed - 2000 . ' calories over your daily limit of 2000 calories in order to continue losing weight! Be careful';
-            break;
-        default:
-            echo "You have consumed the exact amount of calories recommended for you to continue losing weight safely!";
-            break;
+    if ($totalCaloriesConsumed < 2000) {
+
+        echo 2000 - $totalCaloriesConsumed . ' calories away from reaching your daily limit of 2000 calories in order to continue losing weight!';
+    } elseif ($totalCaloriesConsumed > 2000) {
+
+        echo $totalCaloriesConsumed - 2000 . ' calories over your daily limit of 2000 calories in order to continue losing weight! Be careful';
+    } else {
+
+        echo "You have consumed the exact amount of calories recommended for you to continue losing weight safely!";
     }
     ?>
 </div>
@@ -97,11 +95,11 @@ foreach($consumedMeals as $consumedMeal) {
         <p>You've eaten nothing! Water fasting??</p>
     <?php else : ?>
         <?php foreach ($consumedMeals as $consumedMeal) : ?>
-            <div class="meal-details meal-<?= htmlspecialchars($consumedMeal['id'])?>">
-                <img src="<?= $imageLink ?>" alt="<?= htmlspecialchars($consumedMeal['meal']['name']) ?>">
+            <div class="meal-details meal-<?= htmlspecialchars($consumedMeal['id'])?>" id="consumed-meal-<?= htmlspecialchars($consumedMeal['id'])?>">
+                <img src="<?= $imageLink ?>" alt="<?= htmlspecialchars($consumedMeal['name']) ?>">
                 <div class="meal-info">
-                    <p id="consumed-meal-name-<?= htmlspecialchars($consumedMeal['id'])?>">Meal: <?= htmlspecialchars($consumedMeal['meal']['name']) ?></p>
-                    <p id="consumed-meal-calories-<?= htmlspecialchars($consumedMeal['id'])?>">Number of Calories: <?= htmlspecialchars($consumedMeal['meal']['calories']) ?></p>
+                    <p id="consumed-meal-name-<?= htmlspecialchars($consumedMeal['id'])?>">Meal: <?= htmlspecialchars($consumedMeal['name']) ?></p>
+                    <p id="consumed-meal-calories-<?= htmlspecialchars($consumedMeal['id'])?>">Number of Calories: <?= htmlspecialchars($consumedMeal['calories']) ?></p>
                     <p id="number-eaten-<?= htmlspecialchars($consumedMeal['id'])?>">Number eaten: <?= htmlspecialchars($consumedMeal['count']) ?></p>
                     <p>Last eaten at: <?= htmlspecialchars($consumedMeal['consumed_at']) ?></p>
                 </div>
@@ -114,8 +112,8 @@ foreach($consumedMeals as $consumedMeal) {
 
 <div id="meal-list">
     <?php foreach ($meals as $meal): ?>
-        <div class="meal">
-            <div class="meal-details meal-<?= htmlspecialchars($meal['id'])?>">
+        <div class="meal meal-<?= htmlspecialchars($meal['id'])?>">
+            <div class="meal-details">
                 <img src="<?= $imageLink ?>" alt="<?= htmlspecialchars($meal['name']) ?>">
                 <div class="meal-info">
                     <p id="meal-name-<?= htmlspecialchars($meal['id'])?>">Meal: <?= htmlspecialchars($meal['name']) ?></p>
@@ -129,12 +127,12 @@ foreach($consumedMeals as $consumedMeal) {
                         <h2>If you would like to alter this meal, please submit the new details below!</h2>
 
                         <div class="form-group">
-                            <label for="new-name">New Meal Name:</label>
-                            <input type="text" id="new-name" name="new-name" title="Enter the new meal name!" required>
+                            <label for="new-name-<?= htmlspecialchars($meal['id'])?>">New Meal Name:</label>
+                            <input type="text" id="new-name-<?= htmlspecialchars($meal['id'])?>" name="new-name-<?= htmlspecialchars($meal['id'])?>" title="Enter the new meal name!" required>
                         </div>
                         <div class="form-group">
-                            <label for="new-calories">New Number Of Calories:</label>
-                            <input type="number" id="new-calories" name="new-calories" title="Enter the new number of calories!" required>
+                            <label for="new-calories-<?= htmlspecialchars($meal['id'])?>">New Number Of Calories:</label>
+                            <input type="number" id="new-calories-<?= htmlspecialchars($meal['id'])?>" name="new-calories-<?= htmlspecialchars($meal['id'])?>" title="Enter the new number of calories!" required>
                         </div>
 
                         <br>
@@ -145,7 +143,7 @@ foreach($consumedMeals as $consumedMeal) {
                         </div>
 
                         <h2>If you would like to delete this meal from the system, please press the button below!</h2>
-                        <input type="button" value="Delete Meal" onclick="removeListing(<?= htmlspecialchars($meal['id'])?>">
+                        <input type="button" value="Delete Meal" onclick="removeListing(<?= htmlspecialchars($meal['id'])?>)">
 
                     <?php endif; ?>
 
@@ -208,17 +206,26 @@ foreach($consumedMeals as $consumedMeal) {
             pElement.textContent = "You've eaten nothing! Water fasting??";
 
             consumedList.appendChild(pElement);
+
+            document.getElementById("calorie-total").innerHTML =
+                "You are 2000 calories away from reaching your daily limit of 2000 calories in order to continue losing weight!";
         }
     }
 
     function alterMeal(meal) {
 
+        let mealId = meal.id;
+        let newName = document.getElementById("new-name-" + mealId).value;
+        let newCalories = document.getElementById("new-calories-" + mealId).value;
 
         console.log(meal);
+        console.log(mealId);
+        console.log(newName);
+        console.log(newCalories);
 
         axios.post('http://localhost/fitnessThingy/alterMeal.php', {
-            newName    : document.getElementById("new-name").value,
-            newCalories: document.getElementById("new-calories").value,
+            newName    : newName,
+            newCalories: newCalories,
             meal       : meal
         })
             .then(function (response) {
@@ -232,34 +239,36 @@ foreach($consumedMeals as $consumedMeal) {
                 }
                 console.log(response.data);
 
-                changeMealDetails(response.data, meal);
+                changeMealDetails(response.data, meal, newName, newCalories);
             })
             .catch(function (error) {
                 console.log('Error fetching data:', error);
             });
     }
 
-    function changeMealDetails(data, meal) {
+    function changeMealDetails(data, meal, newName, newCalories) {
 
-        console.log(data);
+        //console.log(data);
+        //console.log(newName);
+        console.log(newCalories);
 
         if (!data["error"]) {
 
-            document.getElementById(`meal-name-${meal["id"]}`).innerHTML = "Meal: " + document.getElementById("new-name").value;
-            document.getElementById(`meal-calories-${meal["id"]}`).innerHTML = "Number of Calories " + document.getElementById("new-calories").value;
+            newName     !== "" && (document.getElementById(`meal-name-${meal["id"]}`).innerHTML = "Meal: " + newName);
+            newCalories !== "" && (document.getElementById(`meal-calories-${meal["id"]}`).innerHTML = "Number of Calories " + newCalories);
 
             if (document.getElementById("consumed-meal-" + meal["id"])) {
-                document.getElementById(`consumed-meal-name-${meal["id"]}`).innerHTML = "Meal: " + document.getElementById("new-name").value;
-                document.getElementById(`consumed-meal-calories-${meal["id"]}`).innerHTML = "Number of Calories " + document.getElementById("new-calories").value;
+                newName     !== "" && (document.getElementById(`consumed-meal-name-${meal["id"]}`).innerHTML = "Meal: " + newName);
+                newCalories !== "" && (document.getElementById(`consumed-meal-calories-${meal["id"]}`).innerHTML = "Number of Calories: " + newCalories);
             }
         }
 
-        let outputDiv = document.getElementById("output");
+        let outputDiv       = document.getElementById("output");
         outputDiv.innerHTML = "";
 
         for (let i = 0; i < data["events"].length; i++) {
-            let event = data["events"][i];
-            let output = document.createElement("p");
+            let event          = data["events"][i];
+            let output         = document.createElement("p");
             output.textContent = event;
 
             outputDiv.appendChild(output);
@@ -285,7 +294,7 @@ foreach($consumedMeals as $consumedMeal) {
                 }
                 console.log(response.data);
 
-                printToScreen(response.data, mealId);
+                //printToScreen(response.data, mealId);
             })
             .catch(function (error) {
                 console.log('Error fetching data:', error);
@@ -344,7 +353,7 @@ foreach($consumedMeals as $consumedMeal) {
         console.log(id);
 
         axios.post('http://localhost/fitnessThingy/removeListingScript.php', {
-            propertyId: id
+            mealId: id
 
 
         })
@@ -354,7 +363,7 @@ foreach($consumedMeals as $consumedMeal) {
 
                 if (response.data.length <= 0)
                 {
-                    console.log("Nothing has been bid on");
+                    console.log("Nothing has been removed");
                     return;
                 }
                 console.log(response.data);

@@ -38,7 +38,7 @@ class Meal
 
 
 
-    public function register(Database $connection): void
+    public function register(\database\Database $connection): void
     {
         if($connection->select("meal", [], "name = '{$this->getName()}'")) {
             die("This meal already exists");

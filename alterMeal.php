@@ -1,13 +1,8 @@
 <?php
-include_once ("Database.php");
+require_once("database/config.php");
 include_once("LandingPageController.php");
 include_once ("User.php");
 include_once ("Event.php");
-
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 if(!$_SESSION["isAdmin"]) {
     die("You ain't no admin lil man");
@@ -20,7 +15,7 @@ $meal        = (array)  $requestData['meal'];
 $newName     = (string) $requestData['newName'];
 $newCalories = (int)    $requestData['newCalories'];
 
-if (!$newName || !$newCalories || empty($meal)) {
+if (empty($meal) || (!$newCalories && !$newName)) {
     return;
 }
 
@@ -29,13 +24,6 @@ $alterMeal = [
     "newName"     => $newName,
     "newCalories" => $newCalories
 ];
-
-try {
-    $connection = new Database();
-} catch (Exception $e)  {
-    echo $e->getMessage();
-    return;
-}
 
 $event = new Event();
 

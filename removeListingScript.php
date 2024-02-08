@@ -1,5 +1,5 @@
 <?php
-include_once ("Database.php");
+require_once("database/config.php");
 include_once("LandingPageController.php");
 include_once ("User.php");
 include_once ("Event.php");
@@ -7,22 +7,11 @@ include_once ("Event.php");
 $json        = file_get_contents('php://input');
 $requestData = json_decode($json, true);
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $user = unserialize($_SESSION['user']);
-
-try {
-    $connection = new Database();
-} catch (Exception $e)  {
-    echo $e->getMessage();
-    return;
-}
 
 $event = new Event();
 
-$mealId = (int) $requestData['id'];
+$mealId = (int) $requestData['mealId'];
 
 if(!$mealId) {
     return;

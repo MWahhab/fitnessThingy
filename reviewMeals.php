@@ -1,12 +1,8 @@
 <?php
 
 include_once ("User.php");
-include_once ("Database.php");
-include_once ("AuctionHouseController.php");
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once("database/config.php");
+include_once ("LandingPageController.php");
 
 if (!isset($_SESSION['isLoggedIn']) || !$_SESSION['isAdmin']) {
     die('You have to be authenticated to view this page');
@@ -18,8 +14,6 @@ if (!isset($_SESSION['isLoggedIn']) || !$_SESSION['isAdmin']) {
 $user           = unserialize($_SESSION['user']);
 
 $imageLink = 'https://t3.ftcdn.net/jpg/06/77/21/80/360_F_677218014_VrMyeS8jY1u0kqxSZQLfiCfEpzgixztB.jpg';
-
-$connection = new Database();
 
 $controller     = new AuctionHouseController($connection, $user);
 

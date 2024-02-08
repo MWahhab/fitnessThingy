@@ -3,16 +3,16 @@
 
 class LandingPageController
 {
-    private Database $connection;
+    private \database\Database $connection;
     private User     $user;
     private Event    $event;
 
     /**
-     * @param Database $connection
+     * @param \database\Database $connection
      * @param User $user
      * @param Event $event
      */
-    public function __construct(Database $connection, User $user, Event $event)
+    public function __construct(\database\Database $connection, User $user, Event $event)
     {
         $this->connection = $connection;
         $this->user       = $user;
@@ -35,10 +35,7 @@ class LandingPageController
     {
         $this->event->setEvents([]);
 
-        $meal = $this->connection->select("meal", [], "id = {$mealId}");
-
         $unixTS = time();
-
         $currentTime = date("Y-m-d H:i:s", $unixTS);
 
         if (!$mealId) {
@@ -47,33 +44,31 @@ class LandingPageController
             return;
         }
 
-        $consumedMealArr = [
-            "meal_fid"    => $mealId,
-            "user_fid"    => $userId,
-            "count"       => $meal["count"] + 1,
-            "consumed_at" => $currentTime
-        ];
+        $consumedMeal = $this->connection->select("consumed_today", ["count"], "user_fid = {$userId} AND meal_fid = {$mealId}", 1);
 
-        if(!$this->connection->select("consumed_today", [], "user_fid = {$userId} AND meal_fid = {$mealId}")) {
+        if (!$consumedMeal) {
+            $consumedMealArr = [
+                "meal_fid"    => $mealId,
+                "user_fid"    => $userId,
+                "count"       => 1,
+                "consumed_at" => $currentTime
+            ];
 
             $this->connection->insert("consumed_today", $consumedMealArr);
-            $this->event->addEvent("{$meal["name"]} was eaten with no crumbs left behind!");
+            $this->event->addEvent("Meal was eaten with no crumbs left behind!");
+        } else {
 
-            $this->event->setError(false);
-
-            return;
+            $newCount = $consumedMeal['count'] + 1;
+            $this->connection->update("consumed_today", ["count" => $newCount], ["user_fid" => $userId, "meal_fid" => $mealId]);
+            $this->event->addEvent("Another meal was eaten with no crumbs left behind!");
         }
 
-        $this->connection->update("consumed_today", ["count" => $consumedMealArr["count"]], ["user_fid" => $userId, "meal_fid" => $mealId]);
-        $this->event->addEvent("Another {$meal["name"]} was eaten with no crumbs left behind!");
-
         $this->event->setError(false);
-
     }
 
     public function alterListing(array $alterMeal): void
     {
-        if(!isset($alterMeal["mealToAlter"], $alterMeal["newName"], $alterMeal["newCalories"])) {
+        if (!isset($alterMeal["mealToAlter"]) || (!isset($alterMeal["newName"]) && !isset($alterMeal["newCalories"]))) {
 
             $this->event->addEvent("Insufficient data provided to alter meals");
 
@@ -87,8 +82,31 @@ class LandingPageController
             $this->event->addEvent("The meal that's being attempted to alter doesn't exist in the db");
 
             $this->event->setError(true);
+
+            return;
         }
 
+        if($alterMeal["newName"] == "") {
+
+            $this->connection->update("meal", ["calories" => $alterMeal["newCalories"]], ["id" => $alterMeal["mealToAlter"]["id"]]);
+
+            $this->event->addEvent("The calories for this meal was successfully updated");
+
+            $this->event->setError(false);
+
+            return;
+        }
+
+        if($alterMeal["newCalories"] == 0) {
+
+            $this->connection->update("meal", ["name" => $alterMeal["newName"]], ["id" => $alterMeal["mealToAlter"]["id"]]);
+
+            $this->event->addEvent("The name for this meal was successfully updated");
+
+            $this->event->setError(false);
+
+            return;
+        }
 
         $this->connection->update("meal", ["name" => $alterMeal["newName"], "calories" => $alterMeal["newCalories"]], ["id" => $alterMeal["mealToAlter"]["id"]]);
 
@@ -122,6 +140,7 @@ class LandingPageController
         $mealName = $meal['name'];
 
         $this->connection->delete("meal", ["id" => $id]);
+        $this->connection->delete("consumed_today", ["meal_fid" => $id]);
 
         $this->event->addEvent("$mealName has been successfully removed.");
         $this->event->setError(false);

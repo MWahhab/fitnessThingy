@@ -1,14 +1,9 @@
 <?php
 
-include_once("Database.php");
+require_once("database/config.php");
 include_once("LandingPageController.php");
 include_once("User.php");
 include_once("Event.php");
-
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 $json = file_get_contents('php://input');
 $requestData = json_decode($json, true);
@@ -16,13 +11,6 @@ $requestData = json_decode($json, true);
 $mealId = (int)$requestData['mealId'];
 
 if (!$mealId) {
-    return;
-}
-
-try {
-    $connection = new Database();
-} catch (Exception $e) {
-    echo $e->getMessage();
     return;
 }
 

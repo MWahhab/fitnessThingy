@@ -1,21 +1,9 @@
 <?php
 
-include_once("Database.php");
+require_once("database/config.php");
 include_once("LandingPageController.php");
 include_once("Event.php");
 include_once ("User.php");
-
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-try {
-    $connection = new Database();
-} catch (Exception $e) {
-    echo $e->getMessage();
-    return;
-}
 
 $event = new Event();
 

@@ -1,16 +1,6 @@
 <?php
-require_once ('Database.php');
+require_once("database/config.php");
 require_once ('Meal.php');
-
-try {
-    $connection = new Database();
-} catch (Exception $e) {
-    die($e->getMessage());
-}
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 if(!$_SESSION["isAdmin"]) {
     die("You ain't no admin lil man");

@@ -1,6 +1,6 @@
 <?php
-
-class Event
+// if you want to json encode and echo this object as a response, it must be json serializable
+class Event implements \JsonSerializable
 {
     private array $events;
     private bool  $error;
@@ -35,7 +35,11 @@ class Event
         $this->error = $error;
     }
 
-
-
-
+    /**
+     * @return mixed
+     */
+    public function jsonSerialize(): mixed
+    {
+        return get_object_vars($this);
+    }
 }

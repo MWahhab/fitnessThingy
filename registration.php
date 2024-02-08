@@ -20,8 +20,10 @@ if (!$isValidUserData) {
     die('Invalid user data, cannot create user.');
 }
 
-$user       = new User($email, $password, $fullName);
+// countless unnecessary whitespace and ill formatting
+$user = new User($email, $password, $fullName);
 
+/**
+ * @var \database\Database $connection
+ */
 $user->register($connection);
-
-#endofscript

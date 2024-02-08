@@ -25,8 +25,8 @@ class LandingPageController
     }
 
     /**
-     * @param array $property
-     * @param float $latestBid
+     * @param int $mealId
+     * @param int $userId
      * @return void               Initiates purchase and completes all validation checks.
      *
      *                            Also updates the book's quantity in the database as well as the customer's balance
@@ -44,7 +44,12 @@ class LandingPageController
             return;
         }
 
-        $consumedMeal = $this->connection->select("consumed_today", ["count"], "user_fid = {$userId} AND meal_fid = {$mealId}", 1);
+        $consumedMeal = $this->connection->select(
+            "consumed_today",
+            ["count"],
+            "user_fid = {$userId} AND meal_fid = {$mealId}",
+            1
+        );
 
         if (!$consumedMeal) {
             $consumedMealArr = [
@@ -59,7 +64,11 @@ class LandingPageController
         } else {
 
             $newCount = $consumedMeal['count'] + 1;
-            $this->connection->update("consumed_today", ["count" => $newCount], ["user_fid" => $userId, "meal_fid" => $mealId]);
+            $this->connection->update(
+                "consumed_today",
+                ["count"    => $newCount],
+                ["user_fid" => $userId, "meal_fid" => $mealId]
+            );
             $this->event->addEvent("Another meal was eaten with no crumbs left behind!");
         }
 
@@ -68,8 +77,7 @@ class LandingPageController
 
     public function alterListing(array $alterMeal): void
     {
-        if (!isset($alterMeal["mealToAlter"]) || (!isset($alterMeal["newName"]) && !isset($alterMeal["newCalories"]))) {
-
+        if (!Meal::validateUpdateMealData($alterMeal)) {
             $this->event->addEvent("Insufficient data provided to alter meals");
 
             $this->event->setError(true);
@@ -77,7 +85,7 @@ class LandingPageController
             return;
         }
 
-        if(empty($this->connection->select("meal", [], "id = {$alterMeal['mealToAlter']['id']}"))) {
+        if(empty($this->connection->select("meal", [], "id = {$alterMeal['mealId']}"))) {
 
             $this->event->addEvent("The meal that's being attempted to alter doesn't exist in the db");
 
@@ -86,29 +94,14 @@ class LandingPageController
             return;
         }
 
-        if($alterMeal["newName"] == "") {
-
-            $this->connection->update("meal", ["calories" => $alterMeal["newCalories"]], ["id" => $alterMeal["mealToAlter"]["id"]]);
-
-            $this->event->addEvent("The calories for this meal was successfully updated");
-
-            $this->event->setError(false);
-
-            return;
-        }
-
-        if($alterMeal["newCalories"] == 0) {
-
-            $this->connection->update("meal", ["name" => $alterMeal["newName"]], ["id" => $alterMeal["mealToAlter"]["id"]]);
-
-            $this->event->addEvent("The name for this meal was successfully updated");
-
-            $this->event->setError(false);
-
-            return;
-        }
-
-        $this->connection->update("meal", ["name" => $alterMeal["newName"], "calories" => $alterMeal["newCalories"]], ["id" => $alterMeal["mealToAlter"]["id"]]);
+        $this->connection->update(
+            "meal",
+            [
+                "name"     => (string) $alterMeal["newName"],
+                "calories" => (int)    $alterMeal["newCalories"]
+            ],
+                ["id"      => (int)    $alterMeal["mealId"]]
+        );
 
         $this->event->addEvent("The meal was successfully updated");
 
@@ -117,11 +110,8 @@ class LandingPageController
 
     public function clearTable(): void
     {
-        if(!$this->connection->select("consumed_today")) {
-            $this->event->addEvent("The day cannot be reset as the consumed list is already empty");
-            $this->event->setError(true);
-        }
-
+        // wow what the hell did I just see..
+        // we're duplicating queries for what reason exactly? We're deleting anyway are we not.. wow
         $this->connection->deleteAll("consumed_today");
         $this->event->addEvent("The day has been successfully reset");
         $this->event->setError(false);
@@ -129,6 +119,13 @@ class LandingPageController
 
     public function removeListing(int $id): void
     {
+        if (!$id) {
+            $this->event->addEvent("Unfortunately, this listing doesn't exist and cant be removed.");
+            $this->event->setError(true);
+
+            return;
+        }
+
         $meal = $this->connection->select("meal", [], "id = {$id}", 1);
 
         if (empty($meal)) {
@@ -137,14 +134,11 @@ class LandingPageController
             return;
         }
 
-        $mealName = $meal['name'];
-
         $this->connection->delete("meal", ["id" => $id]);
         $this->connection->delete("consumed_today", ["meal_fid" => $id]);
 
-        $this->event->addEvent("$mealName has been successfully removed.");
+        $this->event->addEvent("{$meal['name']} has been successfully removed.");
         $this->event->setError(false);
-
     }
 
 }

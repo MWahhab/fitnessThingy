@@ -17,11 +17,15 @@ if(!$mealId) {
     return;
 }
 
+/**
+ * Comes from the included config
+ * @var \database\Database $connection
+ */
 $controller = new LandingPageController($connection, $user, $event);
 
 $controller->removeListing($mealId);
 
-$json  = json_encode($event);
+$json = json_encode($event);
 
 echo $json;
 

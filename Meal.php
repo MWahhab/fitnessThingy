@@ -53,9 +53,28 @@ class Meal
         header("Location: http://localhost/fitnessThingy/landingPage.php");
     }
 
-    public static function validateMealData(array $data): bool
+    // better naming in the future
+    public static function validateRegisterMealData(array $data): bool
     {
         if(!isset($data["name"], $data["calories"])) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // we need this in order to validate that we have at least one field updating
+    public static function validateUpdateMealData(array $data): bool
+    {
+        if (!isset($data['mealId']) || strlen($data['mealId']) < 1) {
+            return false;
+        }
+
+        if(!isset($data["newName"], $data["newCalories"])) {
+            return false;
+        }
+
+        if (!(strlen(trim($data["newName"])) || (int) $data["newCalories"] > 0)) {
             return false;
         }
 

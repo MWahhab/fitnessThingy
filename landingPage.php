@@ -12,19 +12,21 @@ if (!isset($_SESSION['isLoggedIn'])) {
  */
 $user           = unserialize($_SESSION['user']);
 $userIsLoggedIn = $_SESSION['isLoggedIn'];
+$imageLink      = 'https://cleobuttera.com/wp-content/uploads/2018/03/lifted-baklava-720x720.jpg';
 
-$imageLink = 'https://cleobuttera.com/wp-content/uploads/2018/03/lifted-baklava-720x720.jpg';
+/**
+ * @var \database\Database $connection
+ */
+$meals = $connection->select('meal');
 
-$meals               = $connection->select('meal');
-
-$consumedMeals       = $connection->select(
+$consumedMeals = $connection->select(
         "consumed_today",
         [
-        'consumed_today.count',
-        'consumed_today.consumed_at',
-        'meal.id',
-        'meal.name',
-        'meal.calories'
+            'consumed_today.count',
+            'consumed_today.consumed_at',
+            'meal.id',
+            'meal.name',
+            'meal.calories'
         ],
         "user_fid = {$user->getId()}",
         0,
@@ -35,7 +37,6 @@ $totalCaloriesConsumed = 0;
 foreach ($consumedMeals as $consumedMeal) {
     $totalCaloriesConsumed += $consumedMeal["calories"] * $consumedMeal["count"];
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -77,13 +78,10 @@ foreach ($consumedMeals as $consumedMeal) {
 <div id="calorie-total">
     You are <?php
     if ($totalCaloriesConsumed < 2000) {
-
         echo 2000 - $totalCaloriesConsumed . ' calories away from reaching your daily limit of 2000 calories in order to continue losing weight!';
     } elseif ($totalCaloriesConsumed > 2000) {
-
         echo $totalCaloriesConsumed - 2000 . ' calories over your daily limit of 2000 calories in order to continue losing weight! Be careful';
     } else {
-
         echo "You have consumed the exact amount of calories recommended for you to continue losing weight safely!";
     }
     ?>
@@ -175,15 +173,10 @@ foreach ($consumedMeals as $consumedMeal) {
     function changeDays() {
         axios.post("http://localhost/fitnessThingy/resetScript.php")
             .then(function (response) {
-
-                console.log(response);
-
                 if (response.data.length <= 0)
                 {
-                    console.log("Nothing has been deleted");
                     return;
                 }
-                console.log(response.data);
 
                 resetConsumedList(response.data);
             })
@@ -213,15 +206,9 @@ foreach ($consumedMeals as $consumedMeal) {
     }
 
     function alterMeal(meal) {
-
-        let mealId = meal.id;
-        let newName = document.getElementById("new-name-" + mealId).value;
+        let mealId      = meal.id;
+        let newName     = document.getElementById("new-name-" + mealId).value;
         let newCalories = document.getElementById("new-calories-" + mealId).value;
-
-        console.log(meal);
-        console.log(mealId);
-        console.log(newName);
-        console.log(newCalories);
 
         axios.post('http://localhost/fitnessThingy/alterMeal.php', {
             newName    : newName,
@@ -230,14 +217,13 @@ foreach ($consumedMeals as $consumedMeal) {
         })
             .then(function (response) {
 
-                console.log(response);
+                console.log(response.data)
 
                 if (response.data.length <= 0)
                 {
                     console.log("No meal has been altered");
                     return;
                 }
-                console.log(response.data);
 
                 changeMealDetails(response.data, meal, newName, newCalories);
             })
@@ -247,10 +233,6 @@ foreach ($consumedMeals as $consumedMeal) {
     }
 
     function changeMealDetails(data, meal, newName, newCalories) {
-
-        //console.log(data);
-        //console.log(newName);
-        console.log(newCalories);
 
         if (!data["error"]) {
 
@@ -278,21 +260,17 @@ foreach ($consumedMeals as $consumedMeal) {
 
 
     function consumeMeal(mealId) {
-        console.log(mealId);
-
         axios.post('http://localhost/fitnessThingy/consumeScript.php', {
             mealId: mealId
         })
             .then(function (response) {
 
-                console.log(response);
 
                 if (response.data.length <= 0)
                 {
                     console.log("Nothing has been consumed");
                     return;
                 }
-                console.log(response.data);
 
                 //printToScreen(response.data, mealId);
             })
@@ -301,57 +279,7 @@ foreach ($consumedMeals as $consumedMeal) {
             });
     }
 
-//    function printToScreen(data, mealId) {
-//
-//        if(!data["error"]) {
-//            if(!document.getElementById("number-eaten-" + mealId)) {
-//                let newConsumedMeal = document.createElement("div");
-//                newConsumedMeal.classList.add("meal-details", `meal-${mealId}`);
-//
-//                var imgElement = document.createElement("img");
-//                imgElement.src = "<?php //= $imageLink ?>//";
-//                imgElement.alt = "<?php //= htmlspecialchars($consumedMeal['name']) ?>//";
-//                newDiv.appendChild(imgElement);
-//
-//                let mealInfoDiv = document.createElement("div");
-//                mealInfoDiv.classList.add("meal-info");
-//
-//// Append the meal-info div to the main div
-//                newDiv.appendChild(mealInfoDiv);
-//
-//// You can now append the newDiv to the DOM as needed
-//// For example, assuming there's a container with the id "meal-container"
-//                document.getElementById("meal-container").appendChild(newDiv);
-//
-//            } else {
-//
-//                let countEle = document.getElementById("number-eaten-" + mealId);
-//                let count = parseInt(countEle.textContent.split(': ')[1]);
-//                let newCount = count + 1;
-//                countEle.textContent = "Number eaten: " + newCount;
-//            }
-//
-//        }
-//
-//            document.getElementById("property-" + property["id"]).querySelector("#current-bidder").innerHTML = "Current Bid Held By: Bidder #" + userId;
-//        }
-//
-//        let outputDiv = document.getElementById("output");
-//        outputDiv.innerHTML = "";
-//
-//        for (let i = 0; i < data.length; i++) {
-//            let event = data[i];
-//            let output = document.createElement("p");
-//            output.textContent = event;
-//
-//            outputDiv.appendChild(output);
-//        }
-//    }
-
     function removeListing(id) {
-
-        console.log(id);
-
         axios.post('http://localhost/fitnessThingy/removeListingScript.php', {
             mealId: id
 
@@ -359,14 +287,12 @@ foreach ($consumedMeals as $consumedMeal) {
         })
             .then(function (response) {
 
-                console.log(response);
 
                 if (response.data.length <= 0)
                 {
                     console.log("Nothing has been removed");
                     return;
                 }
-                console.log(response.data);
 
                 alterListing(response.data, id);
             })

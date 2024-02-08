@@ -3,7 +3,7 @@
 require_once("database/config.php");
 include_once("LandingPageController.php");
 include_once("Event.php");
-include_once ("User.php");
+include_once("User.php");
 
 $event = new Event();
 
@@ -12,6 +12,11 @@ $event = new Event();
  */
 $user = unserialize($_SESSION['user']);
 $temp = $user->getId();
+
+/**
+ * Comes from the included config
+ * @var \database\Database $connection
+ */
 $controller = new LandingPageController($connection, $user, $event);
 $controller->clearTable();
 

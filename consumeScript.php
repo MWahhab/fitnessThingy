@@ -5,7 +5,7 @@ include_once("LandingPageController.php");
 include_once("User.php");
 include_once("Event.php");
 
-$json = file_get_contents('php://input');
+$json        = file_get_contents('php://input');
 $requestData = json_decode($json, true);
 
 $mealId = (int)$requestData['mealId'];
@@ -21,6 +21,10 @@ $event = new Event();
  */
 $user = unserialize($_SESSION['user']);
 $temp = $user->getId();
+
+/**
+ * @var \database\Database $connection
+ */
 $controller = new LandingPageController($connection, $user, $event);
 $controller->initiateConsumption($mealId, $temp);
 

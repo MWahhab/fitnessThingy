@@ -6,24 +6,21 @@ if(!$_SESSION["isAdmin"]) {
     die("You ain't no admin lil man");
 }
 
-$name         = htmlspecialchars($_POST['name']);
-$calories     = htmlspecialchars($_POST["calories"]);
+$name     = htmlspecialchars($_POST['name']);
+$calories = htmlspecialchars($_POST["calories"]);
 
 $mealData = [
     "name"     => $name,
     "calories" => $calories
 ];
 
-$isValidMealData = Meal::validateMealData($mealData);
-
-if (!$isValidMealData) {
+if (!Meal::validateRegisterMealData($mealData)) {// unnecessary variable
     die('Invalid meal data, cannot register this property.');
 }
 
-$meal   = new Meal($name, $calories);
+$meal = new Meal($name, $calories);
 
+/**
+ * @var \database\Database $connection
+ */
 $meal->register($connection);
-
-//$queriedMeal = $connection->select("meal", [], "name = {$name} AND calories = {$calories}");
-//$meal->setId($queriedMeal["id"]);
-#endofscript
